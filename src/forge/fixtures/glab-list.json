@@ -1,0 +1,30 @@
+[
+  {
+    "iid": 21,
+    "title": "Example change 21",
+    "web_url": "https://gitlab.com/octo/example/-/merge_requests/21",
+    "state": "merged",
+    "draft": false,
+    "source_branch": "alice/retry",
+    "target_branch": "main",
+    "sha": "8888888888888888888888888888888888888888",
+    "source_project_id": 1001,
+    "target_project_id": 1001,
+    "merged_at": "2026-10-29T17:18:27.04Z",
+    "head_pipeline": null
+  },
+  {
+    "iid": 20,
+    "title": "Example change 20",
+    "web_url": "https://gitlab.com/octo/example/-/merge_requests/20",
+    "state": "merged",
+    "draft": false,
+    "source_branch": "bob/docs",
+    "target_branch": "main",
+    "sha": "9999999999999999999999999999999999999999",
+    "source_project_id": 1001,
+    "target_project_id": 1001,
+    "merged_at": "2026-10-28T21:30:25.728Z",
+    "head_pipeline": null
+  }
+]

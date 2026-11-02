@@ -1,0 +1,15 @@
+{
+  "issues": [
+    {
+      "expand": "",
+      "id": "10098",
+      "self": "https://acme.atlassian.net/rest/api/3/issue/10098",
+      "key": "ABC-98",
+      "fields": {
+        "summary": "Login rate limit",
+        "status": { "name": "To Do", "id": "1", "statusCategory": { "id": 2, "key": "new", "name": "To Do" } }
+      }
+    }
+  ],
+  "isLast": true
+}

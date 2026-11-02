@@ -1,0 +1,26 @@
+{
+  "number": 31,
+  "title": "Example change 31",
+  "url": "https://cursor.com/codebase/octo/example/pull/31",
+  "status": "open",
+  "isDraft": false,
+  "headRef": "alice/fix-login",
+  "baseRef": "main",
+  "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "mergedAt": null,
+  "ciState": {
+    "checkRunGroups": [
+      {
+        "id": "grp_1",
+        "name": "CI",
+        "checkRuns": [
+          { "id": "run_1", "name": "test", "status": "completed", "conclusion": "success", "externalId": "", "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+          { "id": "run_2", "name": "lint", "status": "in_progress", "externalId": "", "headSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+        ],
+        "externalId": "",
+        "key": "ci"
+      }
+    ],
+    "otherChangeCodeReviewGateRunsKept": false
+  }
+}

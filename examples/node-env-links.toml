@@ -1,0 +1,23 @@
+# A monorepo whose apps read gitignored .env.local files.
+# Each new worktree symlinks them from the main checkout, then installs dependencies.
+
+link = [
+  ".env.local",
+  "apps/web/.env.local",
+  "apps/api/.env.local",
+  ".claude/settings.local.json",
+]
+
+[hooks]
+setup = "pnpm install"
+
+[branch]
+# {user} is your own prefix (user config `user`, else github.user, else your email's local part).
+template = "{user}/{key}-{slug}"
+
+[[tabs]]
+title = "dev"
+command = "pnpm dev"
+
+[agent]
+command = ["claude"]

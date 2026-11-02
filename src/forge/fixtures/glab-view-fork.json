@@ -1,0 +1,19 @@
+{
+  "iid": 22,
+  "title": "Example change 22",
+  "web_url": "https://gitlab.com/octo/example/-/merge_requests/22",
+  "state": "opened",
+  "draft": false,
+  "source_branch": "fix-login",
+  "target_branch": "main",
+  "sha": "6666666666666666666666666666666666666666",
+  "source_project_id": 2002,
+  "target_project_id": 1001,
+  "merged_at": null,
+  "head_pipeline": {
+    "id": 3001,
+    "status": "success",
+    "ref": "fix-login",
+    "sha": "6666666666666666666666666666666666666666"
+  }
+}

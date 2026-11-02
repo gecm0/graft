@@ -1,0 +1,22 @@
+{
+  "data": {
+    "searchIssues": {
+      "nodes": [
+        {
+          "identifier": "ABC-123",
+          "title": "Fix the login page",
+          "url": "https://linear.app/acme/issue/ABC-123/fix-the-login-page",
+          "branchName": "alice/abc-123-fix-the-login-page",
+          "state": { "name": "In Progress" }
+        },
+        {
+          "identifier": "ABC-98",
+          "title": "Login rate limit",
+          "url": "https://linear.app/acme/issue/ABC-98/login-rate-limit",
+          "branchName": "abc-98-login-rate-limit",
+          "state": { "name": "Done" }
+        }
+      ]
+    }
+  }
+}

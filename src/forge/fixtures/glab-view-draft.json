@@ -1,0 +1,19 @@
+{
+  "iid": 23,
+  "title": "Example change 23",
+  "web_url": "https://gitlab.com/octo/example/-/merge_requests/23",
+  "state": "opened",
+  "draft": true,
+  "source_branch": "alice/add-sizes",
+  "target_branch": "main",
+  "sha": "7777777777777777777777777777777777777777",
+  "source_project_id": 1001,
+  "target_project_id": 1001,
+  "merged_at": null,
+  "head_pipeline": {
+    "id": 3001,
+    "status": "success",
+    "ref": "refs/merge-requests/23/merge",
+    "sha": "7777777777777777777777777777777777777777"
+  }
+}

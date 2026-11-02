@@ -1,0 +1,24 @@
+{
+  "data": {
+    "viewer": {
+      "assignedIssues": {
+        "nodes": [
+          {
+            "identifier": "ABC-123",
+            "title": "Fix the login page",
+            "url": "https://linear.app/acme/issue/ABC-123/fix-the-login-page",
+            "branchName": "alice/abc-123-fix-the-login-page",
+            "state": { "name": "In Progress" }
+          },
+          {
+            "identifier": "XYZ-7",
+            "title": "Add dark mode",
+            "url": "https://linear.app/acme/issue/XYZ-7/add-dark-mode",
+            "branchName": "alice/xyz-7-add-dark-mode",
+            "state": { "name": "Todo" }
+          }
+        ]
+      }
+    }
+  }
+}

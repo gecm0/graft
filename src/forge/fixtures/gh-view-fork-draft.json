@@ -1,0 +1,24 @@
+{
+  "baseRefName": "main",
+  "headRefName": "fix-login",
+  "headRefOid": "1111111111111111111111111111111111111111",
+  "isCrossRepository": true,
+  "isDraft": true,
+  "mergedAt": null,
+  "number": 12,
+  "state": "OPEN",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-21T17:07:09Z",
+      "conclusion": "SKIPPED",
+      "detailsUrl": "https://github.com/octo/example/actions/runs/1001/job/2001",
+      "name": "test",
+      "startedAt": "2026-10-21T17:07:10Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    }
+  ],
+  "title": "Example change 12",
+  "url": "https://github.com/octo/example/pull/12"
+}

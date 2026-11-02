@@ -1,0 +1,11 @@
+{
+  "data": {
+    "issue": {
+      "identifier": "ABC-123",
+      "title": "Fix the login page",
+      "url": "https://linear.app/acme/issue/ABC-123/fix-the-login-page",
+      "branchName": "alice/abc-123-fix-the-login-page",
+      "state": { "name": "In Progress" }
+    }
+  }
+}

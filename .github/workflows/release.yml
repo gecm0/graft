@@ -1,0 +1,38 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.x
+      - run: bun install --frozen-lockfile
+      - run: bun test
+      # graft update compares the tag with the version built into the binary, so they must match.
+      - name: Tag matches package.json
+        run: test "v$(bun -e 'console.log((await Bun.file("package.json").json()).version)')" = "$GITHUB_REF_NAME"
+      # Asset names are what graft update asks for: graft-<process.platform>-<process.arch>.
+      # The macOS binaries are not signed here; install and graft update sign them ad hoc.
+      - name: Build
+        run: |
+          for target in darwin-arm64 darwin-x64 linux-arm64 linux-x64; do
+            bun run compile --target=bun-$target --outfile dist/graft-$target
+          done
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        # A semver prerelease (v0.2.0-rc.1) is marked as one, so /releases/latest and graft update skip it.
+        run: |
+          pre=""
+          case "$GITHUB_REF_NAME" in *-*) pre="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/graft-* --generate-notes $pre

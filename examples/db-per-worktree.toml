@@ -1,0 +1,12 @@
+# A repo whose own script gives each worktree a database and a set of ports.
+# graft runs the hooks with cwd = the worktree and these variables set:
+# GRAFT_ROOT, GRAFT_WORKTREE, GRAFT_BRANCH, GRAFT_NAME, GRAFT_BASE.
+# Hooks run with `bash -e`: the first failing line stops the hook.
+
+[hooks]
+setup = """
+bun install
+bun run scripts/worktree.ts setup
+"""
+# Runs while the checkout still exists; a failure refuses the removal.
+teardown = "bun run scripts/worktree.ts down"

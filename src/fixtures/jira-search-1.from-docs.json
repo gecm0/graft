@@ -1,0 +1,16 @@
+{
+  "issues": [
+    {
+      "expand": "",
+      "id": "10123",
+      "self": "https://acme.atlassian.net/rest/api/3/issue/10123",
+      "key": "ABC-123",
+      "fields": {
+        "summary": "Fix the login page",
+        "status": { "name": "In Progress", "id": "3", "statusCategory": { "id": 4, "key": "indeterminate", "name": "In Progress" } }
+      }
+    }
+  ],
+  "nextPageToken": "page-2-token",
+  "isLast": false
+}

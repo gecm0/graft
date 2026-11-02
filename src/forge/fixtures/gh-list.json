@@ -1,0 +1,83 @@
+[
+  {
+    "baseRefName": "main",
+    "headRefName": "alice/fix-login",
+    "headRefOid": "3333333333333333333333333333333333333333",
+    "isCrossRepository": false,
+    "isDraft": false,
+    "mergedAt": null,
+    "number": 15,
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-28T02:14:50Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/octo/example/actions/runs/1001/job/2001",
+        "name": "test",
+        "startedAt": "2026-10-28T02:12:01Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-28T02:18:06Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/octo/example/actions/runs/1001/job/2001",
+        "name": "test",
+        "startedAt": "2026-10-28T02:12:04Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      }
+    ],
+    "title": "Example change 15",
+    "url": "https://github.com/octo/example/pull/15"
+  },
+  {
+    "baseRefName": "main",
+    "headRefName": "bob/retry",
+    "headRefOid": "4444444444444444444444444444444444444444",
+    "isCrossRepository": true,
+    "isDraft": false,
+    "mergedAt": null,
+    "number": 14,
+    "state": "CLOSED",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-29T03:46:40Z",
+        "conclusion": "FAILURE",
+        "detailsUrl": "https://github.com/octo/example/actions/runs/1001/job/2001",
+        "name": "test",
+        "startedAt": "2026-10-29T03:45:16Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-29T03:45:21Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/octo/example/actions/runs/1001/job/2001",
+        "name": "test",
+        "startedAt": "2026-10-29T03:45:16Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      }
+    ],
+    "title": "Example change 14",
+    "url": "https://github.com/octo/example/pull/14"
+  },
+  {
+    "baseRefName": "main",
+    "headRefName": "docs",
+    "headRefOid": "5555555555555555555555555555555555555555",
+    "isCrossRepository": true,
+    "isDraft": false,
+    "mergedAt": null,
+    "number": 13,
+    "state": "CLOSED",
+    "statusCheckRollup": [],
+    "title": "Example change 13",
+    "url": "https://github.com/octo/example/pull/13"
+  }
+]

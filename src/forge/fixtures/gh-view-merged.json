@@ -1,0 +1,24 @@
+{
+  "baseRefName": "main",
+  "headRefName": "alice/add-sizes",
+  "headRefOid": "2222222222222222222222222222222222222222",
+  "isCrossRepository": false,
+  "isDraft": false,
+  "mergedAt": "2026-10-30T18:24:32Z",
+  "number": 11,
+  "state": "MERGED",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-30T17:34:11Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/octo/example/actions/runs/1001/job/2001",
+      "name": "test",
+      "startedAt": "2026-10-30T17:31:00Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    }
+  ],
+  "title": "Example change 11",
+  "url": "https://github.com/octo/example/pull/11"
+}

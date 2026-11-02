@@ -1,0 +1,24 @@
+[
+  {
+    "number": 32,
+    "title": "Example change 32",
+    "url": "https://cursor.com/codebase/octo/example/pull/32",
+    "status": "draft",
+    "isDraft": true,
+    "headRef": "bob/retry",
+    "baseRef": "main",
+    "headSha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "mergedAt": null
+  },
+  {
+    "number": 30,
+    "title": "Example change 30",
+    "url": "https://cursor.com/codebase/octo/example/pull/30",
+    "status": "merged",
+    "isDraft": false,
+    "headRef": "docs",
+    "baseRef": "main",
+    "headSha": "cccccccccccccccccccccccccccccccccccccccc",
+    "mergedAt": "2026-10-30T18:24:32.000Z"
+  }
+]
