@@ -243,7 +243,7 @@ Lists the open pull requests (and drafts) of the repository on its forge, as [PR
 
 ### `graft search jira [query]`
 
-Without `query`, lists your Jira issues that are not done (`assignee = currentUser() AND statusCategory != Done`), most recently updated first. With `query`, Jira's text search over all issues you can see (`text ~ "<query>"`). At most 50 issues either way, following `nextPageToken` across pages. It needs no repository. Pass a `key` to `graft create --jira <KEY>`.
+Without `query`, lists your Jira issues that are not done (`assignee = currentUser() AND statusCategory != Done`), most recently updated first. An exact key such as `AIR-2` looks up that issue directly, including completed issues. Keys accept lowercase and surrounding spaces; an unknown or inaccessible key returns no results. Other queries use Jira's text search over all issues you can see (`text ~ "<query>"`). At most 50 issues either way, following `nextPageToken` across pages. It needs no repository. Pass a `key` to `graft create --jira <KEY>`.
 
 ```json
 [{"key":"ABC-123","summary":"Fix the login page","url":"https://acme.atlassian.net/browse/ABC-123","status":"In Progress"}]

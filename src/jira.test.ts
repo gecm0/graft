@@ -60,6 +60,37 @@ test('issue and search map to JiraIssue with Basic email:api_token; search follo
   expect(io.warnings).toEqual([])
 })
 
+test('search jira looks up exact keys, including completed issues, without a repository', async () => {
+  const completed = JSON.parse(await fixture('issue'))
+  completed.fields.status.name = 'Done'
+  for (const query of ['ABC-123', 'abc-123', ' ABC-123 ']) {
+    const net = fakeJira({ '/issue/ABC-123?': { body: JSON.stringify(completed) } })
+    const io = fakeIo({}, { files: keyFile, fetch: net.fetch })
+    expect(await search(io, 'jira', query)).toMatchObject({ kind: 'jira', hits: [{ key: 'ABC-123', status: 'Done' }] })
+    expect(net.sent).toHaveLength(1)
+    expect(net.sent[0]!.method).toBe('GET')
+    expect(io.calls).toEqual([])
+  }
+})
+
+test('exact-key search returns no hits for 404, but reports authentication and network errors', async () => {
+  for (const status of [404, 401, 403, 500]) {
+    const net = fakeJira({ '/issue/': { body: '{"errorMessages":["Request failed"]}', status } })
+    const j = await jira(fakeIo({}, { files: keyFile, fetch: net.fetch }))
+    if (status === 404) expect(await j.search('ABC-123')).toEqual([])
+    else await expect(j.search('ABC-123')).rejects.toMatchObject({ kind: 'network' })
+  }
+  const j = await jira(fakeIo({}, { files: keyFile, fetch: async () => { throw new Error('offline') } }))
+  await expect(j.search('ABC-123')).rejects.toMatchObject({ kind: 'network' })
+})
+
+test('a key within a longer query still uses text search', async () => {
+  const net = fakeJira({ '/search/jql': { body: '{"issues":[],"isLast":true}' } })
+  const j = await jira(fakeIo({}, { files: keyFile, fetch: net.fetch }))
+  expect(await j.search('fix ABC-123')).toEqual([])
+  expect(net.sent[0]!.body.jql).toBe('text ~ "fix ABC-123" ORDER BY updated DESC')
+})
+
 test('JIRA_* env wins over the file; a missing setting is a usage error', async () => {
   const net = fakeJira({ '/issue/': { body: await fixture('issue') } })
   const env = { JIRA_SITE: 'other.atlassian.net', JIRA_EMAIL: 'env@example.com', JIRA_API_TOKEN: 'env-token' }

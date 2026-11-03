@@ -43,7 +43,9 @@ export async function jira(io: Io, user?: UserConfig): Promise<Jira> {
     let json: any
     try {
       json = JSON.parse(text)
-    } catch {}
+    } catch {
+      json = undefined // Jira can return plain-text errors, such as a 401.
+    }
     if (res.ok && json) return json
     const message = json?.errorMessages?.[0] ?? Object.values(json?.errors ?? {})[0] ?? (text.trim().slice(0, 200) || `HTTP ${res.status}`)
     if (res.status === 404) throw new GraftError('not-found', `Jira: ${message}`)
@@ -57,13 +59,23 @@ export async function jira(io: Io, user?: UserConfig): Promise<Jira> {
     status: i.fields?.status?.name ?? '',
   })
 
+  const issue = async (key: string): Promise<JiraIssue> =>
+    toIssue(await call(`/rest/api/3/issue/${encodeURIComponent(key)}?fields=${fields.join(',')}`))
+
   return {
-    async issue(key) {
-      return toIssue(await call(`/rest/api/3/issue/${encodeURIComponent(key)}?fields=${fields.join(',')}`))
-    },
-    // With a query: Jira's text search over every issue. Without: my unresolved issues.
+    issue,
+    // Exact keys use issue lookup; other text uses search. Without a query: my unresolved issues.
     // ponytail: at most 50 issues across pages; raise the cap if a picker needs more.
     async search(query) {
+      const key = query?.trim().toUpperCase()
+      if (key && /^[A-Z][A-Z0-9_]*-\d+$/.test(key)) {
+        try {
+          return [await issue(key)]
+        } catch (e) {
+          if (e instanceof GraftError && e.kind === 'not-found') return []
+          throw e
+        }
+      }
       const filter = query?.trim() ? `text ~ ${quote(query.trim())}` : 'assignee = currentUser() AND statusCategory != Done'
       const jql = `${filter} ORDER BY updated DESC`
       const hits: JiraIssue[] = []
