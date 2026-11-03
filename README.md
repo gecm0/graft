@@ -311,7 +311,7 @@ A space "shows" a folder the way Herdr's sidebar decides: the folder its first t
 
 ### Picker
 
-`graft herdr install` adds a picker to Herdr, opened with `cmd-g` (or `herdr-app do mod.open --name graft-new`):
+`graft herdr install` adds a picker to Herdr, opened with `cmd-g` on macOS or `ctrl-shift-g` on Linux (or `herdr-app do mod.open --name graft-new`):
 
 1. Pick a source: a new branch (type a name, used as typed, or a title the [branch template](#branch-names) names), an existing local or remote branch, a pull request, or a Linear or Jira issue, or **Remove worktree** (below). Typing filters each list; branches, pull requests and issues come from `graft search … --json`.
 2. For a new branch, pick its base: the remote's default branch, another worktree's branch (`--from`), or any branch (`--base`).
@@ -324,10 +324,12 @@ graft runs in the focused terminal's folder (else the shown space's), so open th
 `graft herdr install`:
 
 - Symlinks `herdr/mods/graft-new`, `graft-panel` and `graft-tabs` into `$HERDR_APP_HOME/mods` (default `~/.config/herdr-app/mods`), and `herdr/layouts/graft.json` into `$HERDR_APP_HOME/layouts`. It copies the Worktrees icon to `$HERDR_APP_HOME/graft-icons/graft.svg`, overwritten every run, because Herdr loads no SVG through a symlinked mod folder. Run from source, the links point into this repository, so a `git pull` updates them. The binary carries the mods inside it: it writes them to `~/.config/graft/herdr` (overwritten on every run; `$XDG_CONFIG_HOME/graft/herdr` when set) and links those, so rerun `graft herdr install` after `graft update`. Anything already there that isn't graft's symlink is left alone (`exists`). Herdr may not reload a symlinked mod when its files change: restart Herdr after an update.
-- Binds `cmd-g` to `mod.open:graft-new` in the `global` section of `keys.json`, after asking on a terminal, or at once with `--yes`. Without a terminal and without `--yes` it binds nothing (`declined`), and it never replaces a key bound to something else (`taken`) or creates a missing `keys.json` (`missing`).
+- Binds `cmd-g` on macOS or `ctrl-shift-g` on Linux to `mod.open:graft-new` in the `global` section of `keys.json`, after asking on a terminal, or at once with `--yes`. Without a terminal and without `--yes` it binds nothing (`declined`), and it never replaces a key bound to something else (`taken`) or creates a missing `keys.json` (`missing`).
 - Run it again at any time: what is already there is reported as `present`.
 
-To uninstall, remove the symlinks and the `cmd-g` line from `keys.json`.
+On Linux, rerun `graft herdr install --yes` after updating to add `ctrl-shift-g`. Existing bindings, including an older `cmd-g` binding, stay unchanged.
+
+To uninstall, remove the symlinks and graft's `cmd-g` or `ctrl-shift-g` entries from `keys.json`.
 
 ### Side panel
 

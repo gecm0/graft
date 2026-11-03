@@ -8,7 +8,6 @@ import { compiled, type Io } from '../io.ts'
 // panel comes with a clone of the `main` layout (herdr/layouts/graft.json) that shows both.
 export const mods = ['graft-new', 'graft-panel', 'graft-tabs']
 export const layout = 'graft'
-export const binding = { keys: 'cmd-g', action: 'mod.open:graft-new' }
 // Herdr doesn't load SVGs through a symlinked mod folder, so the Worktrees button's icon is copied
 // (overwritten every run) to a real folder in Herdr's home, where graft-tabs and other tab bars find it.
 export const icon = 'graft-icons/graft.svg'
@@ -41,9 +40,10 @@ export type InstallResult = {
 }
 
 // graft herdr install: symlinks graft's mods and layout into Herdr's folder, then asks before
-// binding cmd-g to the picker in keys.json. Nothing that is already there is replaced.
+// binding the platform's shortcut to the picker in keys.json. Nothing that is already there is replaced.
 // The layout is not switched to: that is the person's choice (cmd-shift-l in Herdr).
-export async function herdrInstall(io: Io, opts: { yes: boolean; source?: string }): Promise<InstallResult> {
+export async function herdrInstall(io: Io, opts: { yes: boolean; source?: string; os?: string }): Promise<InstallResult> {
+  const binding = { keys: (opts.os ?? process.platform) === 'linux' ? 'ctrl-shift-g' : 'cmd-g', action: 'mod.open:graft-new' }
   const home = io.env.HERDR_APP_HOME || join(io.home, '.config', 'herdr-app')
   if (!io.exists(home)) throw new GraftError('unsupported', `Herdr's folder ${home} does not exist`, 'install Herdr and open it once, or set HERDR_APP_HOME')
   const source = opts.source ?? (compiled ? await unpackMods(io, Bun.embeddedFiles) : modsSource)
