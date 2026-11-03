@@ -239,7 +239,7 @@ Pass a remote branch's `name` to `graft create --remote <name>`.
 
 ### `graft search prs [query]`
 
-Lists the open pull requests (and drafts) of the repository on its forge, as [PR objects](#pull-requests), for pickers and agents. `query` is passed to the forge's own search (`gh pr list --search`, `glab mr list --search`, `origin pr list --search`). Pass a `number` to `graft create --pr <number>`.
+Lists the open pull requests (and drafts) of the repository on its forge, as [PR objects](#pull-requests), for pickers and agents. A PR number such as `21044` or `#21044` looks up that exact PR, including closed or merged PRs. An unknown number returns no results. Other queries use the forge's text search (`gh pr list --search`, `glab mr list --search`, `origin pr list --search`), including titles. Pass a `number` to `graft create --pr <number>`.
 
 ### `graft search jira [query]`
 

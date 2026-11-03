@@ -18,6 +18,16 @@ export async function search(io: Io, kind: string | undefined, query?: string): 
   const cfg = await loadRepoConfig(io, ctx.main)
   // ctx.root, like create: its results are passed to create --remote / --pr.
   const remote = await pickRemote(io, ctx.root, cfg.remote)
-  if (kind === 'prs') return { kind, hits: await (await forgeOf(io, ctx.root, remote)).search(query) }
+  if (kind === 'prs') {
+    const forge = await forgeOf(io, ctx.root, remote)
+    const number = query?.trim().match(/^#?(\d+)$/)?.[1]
+    if (!number) return { kind, hits: await forge.search(query) }
+    try {
+      return { kind, hits: [await forge.view(number)] }
+    } catch (e) {
+      if (e instanceof GraftError && e.kind === 'not-found') return { kind, hits: [] }
+      throw e
+    }
+  }
   return { kind, hits: await searchBranches(io, ctx.main, remote, query) }
 }
