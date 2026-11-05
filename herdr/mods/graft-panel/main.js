@@ -6,7 +6,7 @@
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex, Scrollbar } from "gpui-base";
 import { spaces, panes, focused, exec, hc, watchFolder, theme } from "herdr";
-import { badges, cleanArgv, commonDir, outcome, panelRows, parseResult, relevant, removeArgv, runLong, summary } from "./lib.js";
+import { badges, cleanArgv, commonDir, outcome, panelContext, panelRows, parseResult, relevant, removeArgv, runLong, summary } from "./lib.js";
 
 const PR_EVERY_MS = 60000;
 
@@ -16,7 +16,7 @@ function location() {
   const pane = f?.pane ? panes().find((p) => p.pane === f.pane) : null;
   return { cwd: pane?.cwd || f?.cwd || space?.folder || null, on: space?.machine ?? null };
 }
-const key = () => JSON.stringify(location());
+const key = (list) => panelContext(list, location());
 
 export default class GraftPanel extends View {
   init(_props, cx) {
@@ -81,7 +81,7 @@ export default class GraftPanel extends View {
 
   refresh(cx) {
     if (this.loading || this.busy) return;
-    const { cwd, on } = location(), context = key();
+    const { cwd, on } = location(), context = key(this.list);
     if (context !== this.context) {
       this.context = context;
       this.list = null;
@@ -90,6 +90,7 @@ export default class GraftPanel extends View {
       this.confirm = null;
       this.note = null;
       this.watched = null;
+      this.watchToken = null;
       if (this.bin) this.error = null;
     }
     if (!this.bin || !cwd) return;
@@ -101,14 +102,15 @@ export default class GraftPanel extends View {
     cx.spawn(async (cx) => {
       try {
         const list = await this.graft(["list", "--json"], cwd);
-        if (key() !== context) return;
+        if (key(this.list) !== context) return;
         this.list = list;
+        this.context = key(list);
         this.error = null;
         this.watch(commonDir(list), cx);
-        if (Date.now() - this.prAt > PR_EVERY_MS) this.loadPrs(cwd, context, cx);
+        if (Date.now() - this.prAt > PR_EVERY_MS) this.loadPrs(cwd, this.context, cx);
       } catch (e) {
-        if (key() !== context) return;
-        this.list = [];
+        if (key(this.list) !== context) return;
+        this.list ??= [];
         this.error = e.message;
       } finally {
         this.loading = false;
@@ -123,7 +125,7 @@ export default class GraftPanel extends View {
     this.prAt = Date.now();
     cx.spawn(async (cx) => {
       const prs = await this.graft(["list", "--pr", "--json"], cwd).catch(() => null);
-      if (!prs || key() !== context) return;
+      if (!prs || key(this.list) !== context) return;
       this.prs = prs;
       cx.notify();
     });
@@ -205,15 +207,17 @@ export default class GraftPanel extends View {
   }
 
   render(cx) {
-    if (key() !== this.context) this.refresh(cx);
+    if (key(this.list) !== this.context) this.refresh(cx);
     const t = theme();
-    const rows = panelRows(this.list, this.prs);
+    const { cwd, on } = location();
+    const rows = panelRows(this.list, this.prs, on ? null : cwd);
     const linked = rows.filter((w) => !w.main).length;
     const stop = (_e, cx) => cx.stop_propagation();
     const row = (w) => {
       const tags = badges(w);
       return h_flex().id(`gp-${w.path}`).flex_none().h(44).px(8).gap(8).items_center().rounded(7)
-        .when(!w.prunable, (el) => el.cursor_pointer().hover((s) => s.bg(t.hover)))
+        .when(w.current, (el) => el.bg(t.raised))
+        .when(!w.prunable, (el) => el.cursor_pointer().hover((s) => s.bg(w.current ? t.raised : t.hover)))
         .on_click((_e, cx) => this.open(w, cx))
         .child(div().flex_none().size(7).rounded(4).bg(w.space ? t.done : t.border))
         .child(v_flex().flex_1().min_w(0)

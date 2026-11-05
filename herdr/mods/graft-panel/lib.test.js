@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import * as picker from "../graft-new/lib.js";
-import { badges, cleanArgv, commonDir, outcome, panelRows, relevant, removeArgv, runLong, summary } from "./lib.js";
+import { badges, cleanArgv, commonDir, outcome, panelContext, panelRows, relevant, removeArgv, runLong, summary } from "./lib.js";
 import * as panel from "./lib.js";
 
 const main = { path: "/r/app", branch: "main", main: true, locked: false, prunable: false, dirty: false, ahead: null, behind: null, merged: false, space: "sp1" };
@@ -16,6 +16,40 @@ test("the last list --pr keeps its PRs on the rows of a later plain list", () =>
   expect(rows.map((r) => r.pr)).toEqual([null, pr]);
   expect(panelRows([main], null)[0].pr).toBeNull();
   expect(panelRows(null, null)).toEqual([]);
+});
+
+test("only the worktree containing the current folder is marked", () => {
+  const nested = { ...wip, path: "/r/app/trees/wip" };
+  const list = [main, wip, nested];
+  for (const [cwd, expected] of [
+    [main.path, main.path],
+    [`${wip.path}/src`, wip.path],
+    [`${nested.path}/src`, nested.path],
+    ["/r/app-other", null],
+    [null, null],
+  ]) {
+    const rows = panelRows(list, null, cwd);
+    expect(rows.filter((w) => w.current).map((w) => w.path)).toEqual(expected ? [expected] : []);
+  }
+  expect(panelRows([{ ...wip, prunable: true }], null, wip.path)[0].current).toBe(false);
+  expect(panelRows(null, null, main.path)).toEqual([]);
+  expect(badges(panelRows([main], null, main.path)[0])).toEqual(["current", "main"]);
+  expect(list.some((w) => w.current)).toBe(false);
+});
+
+test("refresh context stays stable across worktrees and subfolders, but not repositories or machines", () => {
+  const list = [main, wip];
+  const at = (cwd, on = null) => panelContext(list, { cwd, on });
+  const repo = at(main.path);
+  expect(at(wip.path)).toBe(repo);
+  expect(at(`${wip.path}/src`)).toBe(repo);
+  expect(at(`${main.path}/src`)).toBe(repo);
+  expect(at("/r/another")).not.toBe(repo);
+  expect(at("/r/app-other")).not.toBe(repo);
+  expect(at(wip.path, "remote")).not.toBe(repo);
+  expect(at(null)).not.toBe(repo);
+  expect(panelContext(null, { cwd: wip.path, on: null })).not.toBe(repo);
+  expect(panelContext([main, { ...wip, prunable: true }], { cwd: wip.path, on: null })).not.toBe(repo);
 });
 
 test("badges", () => {

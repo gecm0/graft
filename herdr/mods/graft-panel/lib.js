@@ -3,14 +3,24 @@
 
 // One panel row per `graft list --json` entry. `prs`: the last `graft list --pr --json`,
 // whose `pr` is kept on rows of the same path until the next one lands (it is slow and online).
-export function panelRows(list, prs) {
+export function panelRows(list, prs, cwd) {
   const byPath = new Map((prs ?? []).map((w) => [w.path, w.pr ?? null]));
-  return (list ?? []).map((w) => ({ ...w, pr: w.pr !== undefined ? w.pr : byPath.get(w.path) ?? null }));
+  // The deepest match wins when worktrees live inside the main checkout.
+  const current = (list ?? []).filter((w) => !w.prunable && (cwd === w.path || cwd?.startsWith(`${w.path}/`)))
+    .sort((a, b) => b.path.length - a.path.length)[0];
+  return (list ?? []).map((w) => ({ ...w, current: w === current, pr: w.pr !== undefined ? w.pr : byPath.get(w.path) ?? null }));
+}
+
+// Keep one refresh context while moving between known worktrees of the same repository.
+export function panelContext(list, { cwd, on }) {
+  const known = !on && (list ?? []).some((w) => !w.prunable && (cwd === w.path || cwd?.startsWith(`${w.path}/`)));
+  return JSON.stringify({ cwd: known ? list.find((w) => w.main)?.path ?? cwd : cwd, on });
 }
 
 // Short state words for a row, in the order shown.
 export function badges(w) {
   const out = [];
+  if (w.current) out.push("current");
   if (w.main) out.push("main");
   if (w.locked) out.push("locked");
   if (w.prunable) out.push("prunable");
