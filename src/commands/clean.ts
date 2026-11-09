@@ -10,7 +10,7 @@ import { worktreeFacts } from './status.ts'
 // paths: only these worktrees are considered (the panel passes what the person confirmed).
 export type CleanOpts = { dryRun: boolean; yes: boolean; paths?: string[] }
 
-export type SkipReason = 'not-found' | 'locked' | 'prunable' | 'dirty' | 'submodules' | 'not-merged' | 'no-commits' | 'open-space'
+export type SkipReason = 'not-found' | 'locked' | 'prunable' | 'dirty' | 'submodules' | 'not-merged' | 'no-commits' | 'open-space' | 'changed'
 
 export type CleanResult = {
   // True when nothing was removed on purpose: --dry-run, no TTY without --yes, or "no" at the prompt.
@@ -42,6 +42,7 @@ export async function clean(io: Io, opts: CleanOpts): Promise<CleanResult> {
 
   // A worktree a Herdr space shows is in use; clean leaves it for `graft remove`.
   const spaces = await herdrSpaces(io)
+  const heads = new Map(entries.map((w) => [w.path, w.head]))
   const skip = (w: WorktreeEntry, reason: SkipReason) => result.skipped.push({ path: w.path, branch: w.branch, reason })
   for (const w of entries) {
     if (w.locked) skip(w, 'locked')
@@ -66,6 +67,15 @@ export async function clean(io: Io, opts: CleanOpts): Promise<CleanResult> {
   result.dryRun = false
   for (const c of result.candidates) {
     try {
+      const head = await io.run(['git', 'rev-parse', '--verify', 'HEAD'], { cwd: c.path })
+      if (head.code !== 0 || head.out.trim() !== heads.get(c.path)) {
+        result.skipped.push({ ...c, reason: 'changed' })
+        continue
+      }
+      if (showing(await herdrSpaces(io), c.path, paths).length) {
+        result.skipped.push({ ...c, reason: 'open-space' })
+        continue
+      }
       const r = await remove(io, { worktree: c.path, force: false, keepBranch: false, ignoreTeardown: false })
       result.removed.push({ path: c.path, branch: r.branch })
     } catch (e) {
@@ -116,11 +126,12 @@ async function fetchTargets(io: Io, cwd: string, remote: string, entries: Worktr
 }
 
 // A fresh worktree's tip is its base, so it looks merged; clean must not tear it down.
-// One reflog entry (the creation) means no commit was made on the branch. A missing reflog
+// Repeated entries at the creation SHA (e.g. reset --hard HEAD) aren't new commits. A missing reflog
 // can't tell, so it doesn't skip. Preserved branches existed before graft and aren't judged.
 async function neverCommitted(io: Io, cwd: string, branch: string): Promise<boolean> {
   const preserve = await io.run(['git', 'config', '--type=bool', '--get', `branch.${branch}.graft-preserve`], { cwd })
-  if (preserve.out.trim() === 'true') return false
+  if ((preserve.code !== 0 && preserve.code !== 1) || preserve.out.trim() === 'true') return false
   const reflog = await io.run(['git', 'reflog', 'show', '--format=%H', `refs/heads/${branch}`], { cwd })
-  return reflog.code === 0 && reflog.out.split('\n').filter(Boolean).length === 1
+  const heads = reflog.out.split('\n').filter(Boolean)
+  return reflog.code === 0 && heads.length > 0 && heads.every((head) => head === heads[0])
 }

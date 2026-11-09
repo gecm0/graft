@@ -23,7 +23,16 @@ const script: Record<string, Reply> = {
   'git merge-base --is-ancestor n1': { code: 0 },
 }
 const paths = [w('a'), w('open'), w('a/nested'), w('locked')]
-const io = (extra: Record<string, Reply> = {}, opts: { tty?: boolean; answer?: boolean } = {}) => fakeIo({ ...script, ...extra }, { paths, ...opts })
+const io = (extra: Record<string, Reply> = {}, opts: { tty?: boolean; answer?: boolean } = {}) => {
+  const f = fakeIo({ ...script, ...extra }, { paths, ...opts })
+  const run = f.run
+  f.run = async (cmd, o) => {
+    const r = await run(cmd, o)
+    if (cmd.join(' ') === 'git rev-parse --verify HEAD') return { ...r, out: o?.cwd === w('a/nested') ? 'n1\n' : 'a1\n' }
+    return r
+  }
+  return f
+}
 const removals = (calls: string[][]) => calls.filter((c) => c.slice(0, 3).join(' ') === 'git worktree remove').map((c) => c.at(-1))
 const candidates = [{ path: w('a/nested'), branch: 'nested' }, { path: w('a'), branch: 'a' }]
 

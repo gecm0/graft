@@ -130,8 +130,20 @@ async function openInHerdr(
   // Unnamed, so the space is called after its folder and nests under the repository.
   const made = await herdrDo(io, 'space.new', { folder: o.worktree, tab: first?.name, argv: first?.argv, task: first?.task })
   const result: HerdrResult = { space: made.space, tabs: first ? { [first.name]: made.tab } : {} }
-  for (const t of rest) {
-    result.tabs[t.name] = (await herdrDo(io, 'tab.new', { space: made.space, folder: o.worktree, name: t.name, argv: t.argv, task: t.task })).tab
+  try {
+    for (const t of rest) {
+      let key = t.name
+      for (let n = 2; Object.hasOwn(result.tabs, key); n++) key = `${t.name} (${n})`
+      const tab = await herdrDo(io, 'tab.new', { space: made.space, folder: o.worktree, name: t.name, argv: t.argv, task: t.task })
+      result.tabs = { ...result.tabs, [key]: tab.tab }
+    }
+  } catch (e) {
+    try {
+      await herdrDo(io, 'space.close', { id: made.space, confirmed: true })
+    } catch (cleanup) {
+      io.warn(`could not close incomplete space ${made.space}: ${(cleanup as Error).message}`)
+    }
+    throw e
   }
   return result
 }

@@ -44,7 +44,7 @@ export function systemIo(env: Env = process.env, cwd = process.cwd()): Io {
   return {
     env,
     cwd,
-    home: env.HOME ?? homedir(),
+    home: env.HOME || homedir(),
     async run(cmd, opts = {}) {
       const proc = Bun.spawn(cmd, {
         cwd: opts.cwd ?? cwd,

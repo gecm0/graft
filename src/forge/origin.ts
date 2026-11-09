@@ -1,5 +1,5 @@
 import type { Io } from '../io.ts'
-import { cli, rollup, type Forge, type Pr } from './forge.ts'
+import { checkPrUrl, cli, rollup, type Forge, type Pr } from './forge.ts'
 
 // ciState is only offered by `origin pr view`.
 const fields = 'number,title,url,status,isDraft,headRef,baseRef,headSha,mergedAt'
@@ -28,7 +28,10 @@ export function origin(io: Io, repo: string): Forge {
   const list = async (args: string[]) => ((await cli(io, ['origin', 'pr', 'list', '-R', repo, '--json', fields, ...args])) as any[]).map(fromOrigin)
   return {
     name: 'origin',
-    view: async (ref) => fromOrigin(await cli(io, ['origin', 'pr', 'view', ref, '-R', repo, '--json', `${fields},ciState`])),
+    view: async (ref) => {
+      checkPrUrl(ref, 'cursor.com', repo, '/codebase')
+      return fromOrigin(await cli(io, ['origin', 'pr', 'view', ref, '-R', repo, '--json', `${fields},ciState`]))
+    },
     forBranch: async (branch) => (await list(['--head', branch, '--state', 'all', '-L', '1']))[0] ?? null,
     search: (query) => list(query ? ['--search', query] : []),
     pullRef: () => null,

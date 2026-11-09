@@ -37,9 +37,9 @@ export function itemRows(source, hits, query) {
   }
   if (source.id === "new") {
     if (!q) return [];
-    const title = { key: "title", label: q, detail: "a title: the repository's branch template names it", badge: "title", args: ["--title", q] };
+    const title = { key: "title", label: q, detail: "a title: the repository's branch template names it", badge: "title", args: [`--title=${q}`] };
     // A name with spaces can't be a branch, so only the title row is offered.
-    return /\s/.test(q) ? [title] : [{ key: "name", label: q, detail: "a branch name, used as typed", badge: "name", args: ["--branch", q] }, title];
+    return /\s/.test(q) ? [title] : [{ key: "name", label: q, detail: "a branch name, used as typed", badge: "name", args: [`--branch=${q}`] }, title];
   }
   const rows = (hits ?? []).map((h) => {
     if (source.id === "branch") return { key: h.ref, label: h.name, detail: h.ref.replace(/^refs\/(heads|remotes)\//, ""), badge: h.where, args: ["--remote", h.name] };
@@ -99,9 +99,10 @@ export function parseResult(stdout, code) {
 // The last line of a terminal's text that is a JSON object: graft's result, printed after its progress.
 export function lastJson(text) {
   for (const line of text.split("\n").reverse()) {
-    if (!line.startsWith("{")) continue;
+    const start = line.indexOf("{");
+    if (start < 0) continue;
     try {
-      return JSON.parse(line);
+      return JSON.parse(line.slice(start));
     } catch {}
   }
   return null;

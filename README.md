@@ -153,10 +153,10 @@ Steps:
 1. Refuse the main checkout (`usage`) and locked worktrees (`locked`), even with `--force`.
 2. Unless `--force`: refuse modified or untracked files, or initialized submodules (`dirty`). graft's own symlinks (from `link`) don't count. Also refuse when an agent is working in a Herdr space showing the worktree (`agent-working`).
 3. Run `teardown` in the worktree, while it still exists. If it fails, nothing else happens and graft exits with `teardown-failed`, unless `--ignore-teardown` or `--force`.
-4. Close every Herdr space showing the worktree, wait (up to about 5 seconds) for its terminals to end, and remove them from `hc ls --all`. Without Herdr this step is skipped.
-5. Delete graft's symlinks (only paths from `link` that are still symlinks into the main checkout), then `git worktree remove [--force] <path>`. The main checkout's files are never touched.
+4. Unless `--force`, check again for modified or untracked files and initialized submodules after teardown. If any appeared, keep the worktree, links and spaces.
+5. Delete graft's symlinks (only paths from `link` that are still symlinks into the main checkout), then `git worktree remove [--force] <path>`. If git refuses, restore the removed links and keep the spaces. The main checkout's files are never touched. After removal succeeds, close the worktree's Herdr spaces, wait up to about 5 seconds for their terminals to end, and remove those terminals from `hc ls --all`. The space running graft closes last, after the branch is settled.
 6. Fetch the merge targets: the base recorded at create time and the remote's default branch. The branch counts as merged if its tip is an ancestor of a target (fast-forward or merge commit), or if merging it into the target changes nothing (`git merge-tree --write-tree` equals the target's tree: squash and rebase merges).
-7. A merged branch is deleted with `git update-ref -d refs/heads/<branch> <tip>`, which refuses if the branch moved meanwhile. Otherwise it is kept and reported. Branches marked `branch.<name>.graft-preserve` are always kept.
+7. A merged branch is deleted with `git update-ref -d refs/heads/<branch> <tip>`, which refuses if the branch moved meanwhile. Otherwise it is kept and reported. Branches marked `branch.<name>.graft-preserve` are always kept. An invalid or unreadable preserve flag also keeps the branch.
 
 ```json
 {"removed":"/code/app.worktrees/fix-login","teardown":{"ran":true,"exit":0},"branch":{"name":"fix-login","deleted":false,"reason":"not-merged","head":"9c1f0e2…"}}
@@ -176,9 +176,9 @@ Removes every clean, merged worktree in one go, deleting its branch, by running 
 Steps:
 
 1. Fetch the remote's default branch and every remote base recorded by a worktree, once each.
-2. Check each linked worktree (the main checkout is never touched). Skipped, with a reason: `locked`, `prunable` (its folder is gone), `dirty` (modified or untracked files, not counting graft's symlinks), `not-merged` (not proven merged as in `remove`, or detached), `submodules` (initialized submodules, which `remove` only removes with `--force`), `open-space` (a Herdr space shows it: close it or use `graft remove`) and `no-commits` (the branch never had a commit of its own, e.g. a worktree just created: its tip is still its base, so it looks merged; told by the branch reflog having only its creation entry, not checked for `graft-preserve` branches or when there is no reflog). The rest are candidates.
+2. Check each linked worktree (the main checkout is never touched). Skipped, with a reason: `locked`, `prunable` (its folder is gone), `dirty` (modified or untracked files, not counting graft's symlinks), `not-merged` (not proven merged as in `remove`, or detached), `submodules` (initialized submodules, which `remove` only removes with `--force`), `open-space` (a Herdr space shows it: close it or use `graft remove`) and `no-commits` (the branch never had a commit of its own, e.g. a worktree just created: its tip is still its base, so it looks merged; told by every branch reflog entry having the same commit, not checked for `graft-preserve` branches or when there is no reflog). The rest are candidates.
 3. Without `--yes` or `--dry-run`, on a terminal graft lists the candidates and asks once. When stdin is not a terminal (an agent, a UI) it removes nothing, as with `--dry-run`.
-4. `remove` each candidate, deepest path first, with its usual checks and `teardown`. A failure is reported in `failed` and the others still go ahead; graft then exits with the first failure's code.
+4. Recheck each candidate, deepest path first. Skip it as `changed` if its HEAD moved or cannot be read, or `open-space` if a Herdr space now shows it. Otherwise run `remove` with its usual checks and `teardown`. A failure is reported in `failed` and the others still go ahead; graft then exits with the first failure's code.
 
 ```json
 {"dryRun":false,"candidates":[{"path":"/code/app.worktrees/fix-login","branch":"fix-login"}],"removed":[{"path":"/code/app.worktrees/fix-login","branch":{"name":"fix-login","deleted":true,"head":"9c1f0e2…"}}],"skipped":[{"path":"/code/app.worktrees/wip","branch":"wip","reason":"dirty"}],"failed":[]}
@@ -305,6 +305,8 @@ graft works without [Herdr](https://herdr.dev); with it, `--open herdr` puts a n
 {"worktree":"/code/app.worktrees/fix-login","branch":"fix-login","base":"origin/main","files":{"linked":[],"copied":[],"skipped":[]},"setup":{"ran":false,"exit":null},"herdr":{"space":"sp…","tabs":{"setup":"tb…","agent":"tb…","dev":"tb…"}}}
 ```
 
+Duplicate tab titles keep separate IDs in `herdr.tabs`, using keys such as `agent (2)`. The displayed titles stay unchanged. If a later tab fails to open, graft closes the incomplete new space and keeps the worktree.
+
 `--task <text>` is the agent's first message. When the agent starts at once, Herdr sends it. When it waits for setup, `graft agent` sends it with `hc send` once the agent reports `idle`, because an agent that starts minutes after its tab may miss Herdr's own first message.
 
 A space "shows" a folder the way Herdr's sidebar decides: the folder its first terminal's program is in now (`foreground.cwd` in `hc get`, not where the terminal started), else the folder it was opened in. A folder inside another worktree (with a `worktrees_dir` inside the repository) counts as that worktree's, not the outer one's. `remove` closes those spaces, `clean` skips their worktrees and `status` reports them.
@@ -339,7 +341,7 @@ A Worktrees panel on the right of the Herdr window lists the worktrees of the re
 - Click a row to go to its space, or open one (`graft open`).
 - **Remove** asks, then runs `graft remove <path>` (teardown, space closed, branch deleted only if merged). A refusal, such as uncommitted changes, is shown with graft's message; the panel never passes `--force`.
 - **Clean merged** lists what `graft clean --dry-run` would remove, asks, then runs `graft clean --yes` on exactly those paths: one that stopped qualifying meanwhile is skipped, and nothing else is touched.
-- Remove and clean run in a hidden `hc` terminal, like the picker's create, because teardown can take minutes. Only one runs at a time.
+- Remove and clean run in a hidden `hc` terminal, like the picker's create, because teardown can take minutes. Only one runs at a time. Closing the panel leaves the command running so teardown can finish.
 - It refreshes every 10 seconds, when branches, HEADs or worktrees change in the repository's `.git`, and when you move to another space or pane. Pull requests come from `graft list --pr --json` at most once a minute. Spaces on other machines aren't supported.
 
 Herdr's own layouts and mods can't be changed, so graft ships a copy of Herdr's `main` layout (`graft`) whose panel stack has a `graft` block showing the `graft-panel` mod, and a copy of the `tabs` mod (`graft-tabs`) with a **Worktrees** button next to Files and Changes. `graft herdr install` adds them; switch to the layout with `cmd-shift-l` (or `herdr-app do layout.switch --name graft`). Your current layout is left as it was.

@@ -85,9 +85,10 @@ export function parseResult(stdout, code) {
 // The last line of a terminal's text that is a JSON object: graft's result, printed after its progress.
 export function lastJson(text) {
   for (const line of text.split("\n").reverse()) {
-    if (!line.startsWith("{")) continue;
+    const start = line.indexOf("{");
+    if (start < 0) continue;
     try {
-      return JSON.parse(line);
+      return JSON.parse(line.slice(start));
     } catch {}
   }
   return null;

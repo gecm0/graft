@@ -26,8 +26,8 @@ test("sources filter by label", () => {
 });
 
 test("a typed new branch offers a name and a title, a phrase only a title", () => {
-  expect(itemRows(source("new"), null, "fix-login").map((r) => r.args)).toEqual([["--branch", "fix-login"], ["--title", "fix-login"]]);
-  expect(itemRows(source("new"), null, "Fix login").map((r) => r.args)).toEqual([["--title", "Fix login"]]);
+  expect(itemRows(source("new"), null, "fix-login").map((r) => r.args)).toEqual([["--branch=fix-login"], ["--title=fix-login"]]);
+  expect(itemRows(source("new"), null, "Fix login").map((r) => r.args)).toEqual([["--title=Fix login"]]);
   expect(itemRows(source("new"), null, "  ")).toEqual([]);
 });
 

@@ -85,8 +85,9 @@ async function readToml(io: Io, path: string): Promise<Table | null> {
   if (text === null) return null
   try {
     return Bun.TOML.parse(text) as Table
-  } catch (e) {
-    throw new GraftError('usage', `${path}: invalid TOML: ${(e as Error).message}`)
+  } catch {
+    // Parser messages can quote credentials from the invalid input.
+    throw new GraftError('usage', `${path}: invalid TOML`)
   }
 }
 

@@ -131,7 +131,7 @@ test('the Herdr space graft runs in closes last, after the worktree and branch a
   )
   await remove(f, opts)
   const at = (p: string) => f.calls.findIndex((c) => c.join(' ').startsWith(p))
-  expect(at('herdr-app do space.close {"id":"other"')).toBeLessThan(at('git worktree remove'))
+  expect(at('herdr-app do space.close {"id":"other"')).toBeGreaterThan(at('git worktree remove'))
   expect(at('herdr-app do space.close {"id":"own"')).toBeGreaterThan(at('git merge-base --is-ancestor bbb'))
 })
 

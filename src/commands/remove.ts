@@ -4,7 +4,7 @@ import { findWorktree, hasInitializedSubmodules, isDirty, listWorktrees, pickRem
 import { closeSpace, showing, spaces as herdrSpaces, working } from '../herdr.ts'
 import { runHook, type HookResult } from '../hooks.ts'
 import type { Io } from '../io.ts'
-import { ownLinks, unlinkLinks } from '../materialize.ts'
+import { ownLinks, restoreLinks, unlinkLinks } from '../materialize.ts'
 import { deleteBranch, isMerged, mergeTargets } from '../merged.ts'
 
 export type RemoveOpts = { worktree: string; force: boolean; keepBranch: boolean; ignoreTeardown: boolean }
@@ -63,15 +63,25 @@ export async function remove(io: Io, opts: RemoveOpts): Promise<RemoveResult> {
     io.warn(`teardown exited ${teardown.exit}, removing anyway`)
   }
 
+  if (!opts.force && (await isDirty(io, path, ownLinks(io, ctx.main, path, cfg.link)) || await hasInitializedSubmodules(io, path))) {
+    throw new GraftError('dirty', `${path} changed during teardown`, 'commit or stash changes, or pass --force')
+  }
+
   // The space this graft runs in closes last: closing it ends graft, so everything else is done first.
   const self = io.env.HC_TERMINAL_ID
   const isOwn = (s: (typeof spaces)[number]) => !!self && s.tabs.some((t) => t.terminals.some((x) => x.address === self))
-  for (const space of spaces.filter((s) => !isOwn(s))) await closeSpace(io, space)
   io.warn(`removing ${path}`)
   // Untracked symlinks would make `git worktree remove` refuse; real files and other links stay.
-  await unlinkLinks(io, ctx.main, path, cfg.link)
-  const r = await io.run(['git', 'worktree', 'remove', ...(opts.force ? ['--force'] : []), path], { cwd })
-  if (r.code !== 0) throw new GraftError('dirty', `git worktree remove failed: ${r.err.trim()}`, 'pass --force')
+  const unlinked = await unlinkLinks(io, ctx.main, path, cfg.link)
+  try {
+    const r = await io.run(['git', 'worktree', 'remove', ...(opts.force ? ['--force'] : []), path], { cwd })
+    if (r.code !== 0) throw new GraftError('dirty', `git worktree remove failed: ${r.err.trim()}`, 'pass --force')
+  } catch (e) {
+    await restoreLinks(io, ctx.main, path, unlinked)
+    throw e
+  }
+  // Keep spaces intact until git accepts the removal.
+  for (const space of spaces.filter((s) => !isOwn(s))) await closeSpace(io, space)
 
   const shared = others.some((w) => w.branch === wt.branch)
   const branch = !wt.branch || !wt.head
@@ -87,7 +97,8 @@ export async function remove(io: Io, opts: RemoveOpts): Promise<RemoveResult> {
 async function settleBranch(io: Io, cwd: string, name: string, head: string, remote: string | undefined, keep: boolean): Promise<BranchOutcome> {
   if (keep) return { name, deleted: false, reason: 'kept', head }
   const preserve = await io.run(['git', 'config', '--type=bool', '--get', `branch.${name}.graft-preserve`], { cwd })
-  if (preserve.out.trim() === 'true') return { name, deleted: false, reason: 'preserved', head }
+  if (preserve.code !== 0 && preserve.code !== 1) io.warn(`could not read graft-preserve for ${name}; keeping the branch`)
+  if ((preserve.code !== 0 && preserve.code !== 1) || preserve.out.trim() === 'true') return { name, deleted: false, reason: 'preserved', head }
   const targets = await mergeTargets(io, cwd, name, await pickRemote(io, cwd, remote), true)
   if (!(await isMerged(io, cwd, head, targets))) return { name, deleted: false, reason: 'not-merged', head }
   await deleteBranch(io, cwd, name, head)

@@ -31,6 +31,7 @@ test('clean removes only the clean, merged worktree and deletes its branch (real
   writeFileSync(join(wt('dirty'), 'scratch.txt'), 'wip\n')
   // Just created from origin/main, no commits: its tip is an ancestor, but it must stay.
   expect(graft(r.repo, 'create', '--branch', 'fresh', '--no-setup', '--json').code).toBe(0)
+  r.sh(wt('fresh'), 'git', 'reset', '--hard', 'HEAD')
 
   const skipped = [
     { path: wt('dirty'), branch: 'dirty', reason: 'dirty' },

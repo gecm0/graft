@@ -74,7 +74,7 @@ describe('linkPaths', () => {
 describe('copyIncludes', () => {
   const files = { [`${main}/.worktreeinclude`]: 'certs\nbig\n' }
   const paths = [`${main}/certs`, `${main}/big`]
-  const ignored = { 'git -c core.quotePath=false check-ignore': { out: 'certs\nbig\n' } }
+  const ignored = { 'git -c core.quotePath=false check-ignore': { out: 'certs\nbig\n' }, du: { out: '1\n' } }
 
   test('copies what .worktreeinclude lists, within the budget', async () => {
     const io = fakeIo({ ...ignored, [`du -H -l -sk ${main}/big`]: { out: `${3 * 1024 * 1024}\t${main}/big\n` } }, { files, paths })

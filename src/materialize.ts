@@ -117,10 +117,13 @@ export async function linkPaths(io: Io, main: string, wt: string, paths: string[
 // ponytail: du + find through io.run; a walker that stops at the limit if huge trees ever show up here.
 // -H follows a top-level symlink, as copy() does, so a link to a big folder is measured by its content.
 // -l counts each hard link, since cp -R writes each one out as its own file.
-async function measure(io: Io, path: string): Promise<{ bytes: number; entries: number }> {
-  const kb = Number.parseInt((await io.run(['du', '-H', '-l', '-sk', path])).out, 10) || 0
-  const entries = (await io.run(['find', '-H', path])).out.split('\n').filter(Boolean).length
-  return { bytes: kb * 1024, entries }
+async function measure(io: Io, path: string): Promise<{ bytes: number; entries: number } | null> {
+  const du = await io.run(['du', '-H', '-l', '-sk', path])
+  const kb = Number.parseInt(du.out, 10)
+  if (du.code !== 0 || !Number.isFinite(kb) || kb < 0) return null
+  const found = await io.run(['find', '-H', path])
+  if (found.code !== 0) return null
+  return { bytes: kb * 1024, entries: found.out.split('\n').filter(Boolean).length }
 }
 
 // Copies the paths listed in the main checkout's .worktreeinclude, within a 2 GiB / 50k entries budget.
@@ -134,6 +137,11 @@ export async function copyIncludes(io: Io, main: string, wt: string): Promise<Fi
     const source = join(main, rel)
     const target = join(wt, rel)
     const size = await measure(io, source)
+    if (!size) {
+      io.warn(`${rel} not copied: could not measure its size`)
+      files.skipped.push({ path: rel, reason: 'error' })
+      continue
+    }
     if (used.bytes + size.bytes > maxBytes || used.entries + size.entries > maxEntries) {
       io.warn(`${rel} not copied: copies are capped at 2 GiB and ${maxEntries} entries`)
       files.skipped.push({ path: rel, reason: 'too-large' })
@@ -174,15 +182,30 @@ export async function materialize(io: Io, main: string, wt: string, links: strin
 export function ownLinks(io: Io, main: string, wt: string, links: string[]): string[] {
   return links.flatMap((path) => {
     const rel = safeRel(path)
-    return rel && io.readlink(join(wt, rel)) === join(main, rel) ? [rel] : []
+    return rel && !throughSymlink(io, wt, rel) && io.readlink(join(wt, rel)) === join(main, rel) ? [rel] : []
   })
 }
 
 // Removes graft's symlinks only; real files and other symlinks stay.
-export async function unlinkLinks(io: Io, main: string, wt: string, links: string[]): Promise<void> {
+export async function unlinkLinks(io: Io, main: string, wt: string, links: string[]): Promise<string[]> {
+  const removed: string[] = []
   for (const rel of ownLinks(io, main, wt, links)) {
     // cwd: graft's own may be a worktree clean already removed.
     const r = await io.run(['rm', '--', join(wt, rel)], { cwd: main })
     if (r.code !== 0) io.warn(`could not unlink ${rel}: ${r.err.trim()}`)
+    else removed.push(rel)
+  }
+  return removed
+}
+
+// Roll back a refused removal without overwriting files or following a replaced parent.
+export async function restoreLinks(io: Io, main: string, wt: string, links: string[]): Promise<void> {
+  for (const rel of links) {
+    if (throughSymlink(io, wt, rel) || taken(io, wt, rel)) {
+      io.warn(`could not restore link ${rel}: path is no longer free`)
+      continue
+    }
+    const r = await io.run(['ln', '-s', '--', join(main, rel), join(wt, rel)], { cwd: main })
+    if (r.code !== 0) io.warn(`could not restore link ${rel}: ${r.err.trim()}`)
   }
 }

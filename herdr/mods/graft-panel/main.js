@@ -26,7 +26,6 @@ export default class GraftPanel extends View {
     this.error = null;
     this.confirm = null; // { kind: "remove", row } | { kind: "clean", candidates }
     this.busy = null; // what is running, shown instead of the actions
-    this.job = null; // the hidden terminal running remove or clean
     this.note = null; // { text, tail?, failed }
     // exec sees the person's real PATH; the core terminal remove and clean run in may not, so it gets this one.
     cx.spawn(async (cx) => {
@@ -41,14 +40,7 @@ export default class GraftPanel extends View {
     cx.timer.every(10000, (cx) => this.refresh(cx));
   }
 
-  // On the panel going away: a remove or clean still running is stopped.
-  async close() {
-    // Closed before `hc run` answered: onStart kills the terminal once its address arrives.
-    this.closed = true;
-    if (!this.job) return;
-    await exec("hc", ["kill", this.job]).catch(() => {});
-    await exec("hc", ["rm", this.job]).catch(() => {});
-  }
+  // No close handler: remove and clean must finish even if the panel goes away.
 
   async graft(args, cwd) {
     const r = await exec(this.bin, args, { cwd });
@@ -80,7 +72,7 @@ export default class GraftPanel extends View {
   }
 
   refresh(cx) {
-    if (this.loading || this.busy) return;
+    if (this.busy) return;
     const { cwd, on } = location(), context = key(this.list);
     if (context !== this.context) {
       this.context = context;
@@ -92,6 +84,10 @@ export default class GraftPanel extends View {
       this.watched = null;
       this.watchToken = null;
       if (this.bin) this.error = null;
+    }
+    if (this.loading) {
+      this.refreshPending = true;
+      return;
     }
     if (!this.bin || !cwd) return;
     if (on) {
@@ -114,6 +110,10 @@ export default class GraftPanel extends View {
         this.error = e.message;
       } finally {
         this.loading = false;
+        if (this.refreshPending) {
+          this.refreshPending = false;
+          this.refresh(cx);
+        }
         cx.notify();
       }
     });
@@ -147,6 +147,7 @@ export default class GraftPanel extends View {
   askClean(cx) {
     const main = this.main();
     if (this.busy || !this.bin || !main) return;
+    this.confirm = null;
     this.busy = "Looking for merged worktrees…";
     this.note = null;
     cx.notify();
@@ -166,6 +167,7 @@ export default class GraftPanel extends View {
   // Runs the confirmed remove or clean in a hidden core terminal: teardown may take minutes.
   run(cx) {
     const c = this.confirm, main = this.main();
+    if (!c || this.busy) return;
     this.confirm = null;
     if (!main) return cx.notify();
     const argv = c.kind === "remove" ? removeArgv(c.row.path) : cleanArgv(false, c.candidates.map((x) => x.path));
@@ -174,11 +176,7 @@ export default class GraftPanel extends View {
     cx.notify();
     cx.spawn(async (cx) => {
       try {
-        const onStart = (address) => {
-          this.job = address;
-          if (this.closed) exec("hc", ["kill", address]).catch(() => {});
-        };
-        const { exit, text } = await runLong(hc, [this.bin, ...argv], { cwd: main, env: this.env, onStart });
+        const { exit, text } = await runLong(hc, [this.bin, ...argv], { cwd: main, env: this.env });
         const done = outcome(exit, text, argv[0]);
         this.note = done.ok ? { text: summary(argv, done.result), failed: done.result.failed?.length > 0 } : { text: done.message, tail: done.tail, failed: true };
       } catch (e) {

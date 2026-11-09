@@ -32,7 +32,7 @@ export default class GraftNew extends View {
   init(_props, cx) {
     this.handle = cx.focus_handle();
     this.makeInput("source");
-    cx.timer.after(600, () => this.input.focus());
+    cx.timer.after(600, () => this.focusInput());
     this.cwd = where();
     this.level = "source"; // source | item | base | confirm | run
     this.source = null;
@@ -84,6 +84,10 @@ export default class GraftNew extends View {
     this.input.focus();
   }
 
+  focusInput() {
+    if (this.level !== "confirm" && this.level !== "run") this.input.focus();
+  }
+
   dismiss() {
     closeOverlay(props().overlay);
   }
@@ -120,7 +124,7 @@ export default class GraftNew extends View {
     if (level === "confirm") this.handle.focus(); // no input: Enter and Esc come to key()
     else {
       this.makeInput(level === "item" ? this.source.id : level);
-      cx.timer.after(50, () => this.input.focus()); // again once its Input has rendered
+      cx.timer.after(50, () => this.focusInput()); // again once its Input has rendered
     }
     this.load(cx);
     cx.notify();

@@ -104,13 +104,13 @@ test('spaces is null without Herdr: missing binary, failing or non-JSON output',
   expect(await spaces(fakeIo())).toBeNull()
 })
 
-test('remove: space.close, wait until its terminals are finished, hc rm them, then git worktree remove', async () => {
+test('remove: git accepts removal before space.close, then waits for terminals and removes them', async () => {
   const f = fakeIo(removeScript, { paths: [wt] })
   const polls = closingTerminals(f)
   await remove(f, opts)
   expect(doArgs(f, 'space.close')).toEqual([{ id: 'sp1', confirmed: true }])
   expect(polls()).toBe(2)
-  const order = ['herdr-app do space.close', 'hc ls --all --json', 'hc rm t14', 'hc rm t15', 'git worktree remove']
+  const order = ['git worktree remove', 'herdr-app do space.close', 'hc ls --all --json', 'hc rm t14', 'hc rm t15']
   const at = order.map((p) => index(f, p))
   expect(at.every((i) => i >= 0)).toBe(true)
   expect(at).toEqual([...at].sort((a, b) => a - b))

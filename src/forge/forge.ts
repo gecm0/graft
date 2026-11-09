@@ -40,7 +40,8 @@ export async function cli(io: Io, cmd: string[]): Promise<any> {
     throw new GraftError('unsupported', `${cmd[0]} is not installed`, `install the ${cmd[0]} CLI and log in`)
   }
   if (r.code !== 0) {
-    const message = `${cmd.slice(0, 3).join(' ')} failed: ${(r.err.trim() || r.out.trim() || `exit ${r.code}`).split('\n')[0]}`
+    const detail = (r.err.trim() || r.out.trim() || `exit ${r.code}`).split('\n').map((line) => line.trim()).filter(Boolean).join(' ').slice(0, 300)
+    const message = `${cmd.slice(0, 3).join(' ')} failed: ${detail}`
     throw new GraftError(/not found|could not resolve|404/i.test(r.err + r.out) ? 'not-found' : 'network', message)
   }
   return JSON.parse(r.out)
@@ -48,7 +49,7 @@ export async function cli(io: Io, cmd: string[]): Promise<any> {
 
 // A PR given as a URL must belong to the remote's repository: the CLI would read the URL's PR,
 // while graft fetches the head from the remote, which could be a different branch or PR.
-export function checkPrUrl(ref: string, host: string, repo: string): void {
+export function checkPrUrl(ref: string, host: string, repo: string, prefix = ''): void {
   if (!/^https?:\/\//.test(ref)) return
   let u: URL
   try {
@@ -56,7 +57,7 @@ export function checkPrUrl(ref: string, host: string, repo: string): void {
   } catch {
     throw new GraftError('usage', `${ref} is not a valid URL`, 'pass a PR URL or its number')
   }
-  if (u.hostname !== host || !u.pathname.toLowerCase().startsWith(`/${repo.toLowerCase()}/`)) {
+  if (u.hostname !== host || !u.pathname.toLowerCase().startsWith(`${prefix}/${repo.toLowerCase()}/`)) {
     throw new GraftError('usage', `${ref} is not a pull request of ${host}/${repo}`, 'pass a PR of this repository, or its number')
   }
 }

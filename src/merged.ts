@@ -47,5 +47,8 @@ export async function deleteBranch(io: Io, cwd: string, branch: string, tip: str
   const r = await io.run(['git', 'update-ref', '-d', `refs/heads/${branch}`, tip], { cwd })
   if (r.code !== 0) throw new Error(`could not delete branch ${branch}: ${r.err.trim()}`)
   // Drops graft-base/graft-preserve and any upstream settings, as `git branch -d` would.
-  await io.run(['git', 'config', '--remove-section', `branch.${branch}`], { cwd })
+  const config = await io.run(['git', 'config', '--remove-section', `branch.${branch}`], { cwd, env: { LC_ALL: 'C' } })
+  if (config.code !== 0 && !config.err.includes('no such section')) {
+    io.warn(`could not remove config for branch ${branch}: ${config.err.trim() || `exit ${config.code}`}`)
+  }
 }
